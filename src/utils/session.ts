@@ -36,8 +36,8 @@ class AuthSession {
     return Storage.get(AuthSession.sessionKey_phone_number);
   }
 
-  static getRoles(): number {
-    return Storage.get(AuthSession.sessionKey_roles);
+  static getRoles(): any {
+    return Storage.get(AuthSession.sessionKey_roles)?.role ?? '';
   }
 
   static getOrganizationId(): string {
@@ -68,7 +68,7 @@ class AuthSession {
     Storage.set(AuthSession.sessionKey_email, tokenValue);
   }
 
-  static setRoles(tokenValue: string): void {
+  static setRoles(tokenValue: Record<string, any>): void {
     Storage.set(AuthSession.sessionKey_roles, tokenValue);
   }
 
