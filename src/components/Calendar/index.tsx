@@ -77,6 +77,11 @@ const CalendarContainer = ({ schedule, auth }: CalendarContainerProps) => {
   const [events, setEvents] = useState<EventInput[]>([]);
   const [highlightedDates, setHighlightedDates] = useState<string[]>([]);
   const [selectedStaffId, setSelectedStaffId] = useState<string | null>(null);
+
+  const filteredEvents = selectedStaffId
+    ? events.filter((event) => event.staffId === selectedStaffId)
+    : events;
+    console.log(filteredEvents)
   const [initialDate, setInitialDate] = useState<Date>(
     dayjs(schedule?.scheduleStartDate).toDate()
   );
@@ -148,11 +153,10 @@ const CalendarContainer = ({ schedule, auth }: CalendarContainerProps) => {
         date: assignmentDate,
         staffId: schedule?.assignments?.[i]?.staffId,
         shiftId: schedule?.assignments?.[i]?.shiftId,
-        className: `event ${classes[className]} ${
-          getAssigmentById(schedule?.assignments?.[i]?.id)?.isUpdated
+        className: `event ${classes[className]} ${getAssigmentById(schedule?.assignments?.[i]?.id)?.isUpdated
             ? "highlight"
             : ""
-        } ${!isValidDate ? "invalid-date" : ""}`,
+          } ${!isValidDate ? "invalid-date" : ""}`,
       };
       works.push(work);
     }
@@ -177,8 +181,16 @@ const CalendarContainer = ({ schedule, auth }: CalendarContainerProps) => {
 
   useEffect(() => {
     setSelectedStaffId(schedule?.staffs?.[0]?.id);
+    console.log(schedule.staffs)
     generateStaffBasedCalendar();
   }, [schedule]);
+
+  useEffect(() => {
+    if (calendarRef.current) {
+      const calendarApi = calendarRef.current.getApi();
+      calendarApi.refetchEvents();
+    }
+  }, [filteredEvents]);
 
   useEffect(() => {
     generateStaffBasedCalendar();
@@ -200,9 +212,8 @@ const CalendarContainer = ({ schedule, auth }: CalendarContainerProps) => {
             <div
               key={staff.id}
               onClick={() => setSelectedStaffId(staff.id)}
-              className={`staff ${
-                staff.id === selectedStaffId ? "active" : ""
-              }`}
+              className={`staff ${staff.id === selectedStaffId ? "active" : ""
+                }`}
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -228,7 +239,7 @@ const CalendarContainer = ({ schedule, auth }: CalendarContainerProps) => {
           eventDurationEditable={false}
           initialView="dayGridMonth"
           initialDate={initialDate}
-          events={events}
+          events={filteredEvents}
           firstDay={1}
           dayMaxEventRows={4}
           fixedWeekCount={true}
@@ -278,9 +289,8 @@ const CalendarContainer = ({ schedule, auth }: CalendarContainerProps) => {
 
             return (
               <div
-                className={`${found ? "" : "date-range-disabled"} ${
-                  isHighlighted ? "highlighted-date-orange" : ""
-                } highlightedPair`}
+                className={`${found ? "" : "date-range-disabled"} ${isHighlighted ? "highlighted-date-orange" : ""
+                  } highlightedPair`}
               >
                 {dayjs(date).date()}
               </div>
