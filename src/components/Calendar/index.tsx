@@ -81,7 +81,6 @@ const CalendarContainer = ({ schedule, auth }: CalendarContainerProps) => {
   const filteredEvents = selectedStaffId
     ? events.filter((event) => event.staffId === selectedStaffId)
     : events;
-    console.log(filteredEvents)
   const [initialDate, setInitialDate] = useState<Date>(
     dayjs(schedule?.scheduleStartDate).toDate()
   );
@@ -136,38 +135,58 @@ const CalendarContainer = ({ schedule, auth }: CalendarContainerProps) => {
   const generateStaffBasedCalendar = () => {
     const works: EventInput[] = [];
 
-    for (let i = 0; i < schedule?.assignments?.length; i++) {
+    // selectedStaffId eşleşen assignment'lar
+    const staffAssignments = schedule?.assignments?.filter(
+      (assignment) => assignment?.staffId === selectedStaffId
+    );
+
+    // En erken shiftStart değerine sahip assignment
+    if (staffAssignments && staffAssignments.length > 0) {
+      const earliestAssignment = staffAssignments.reduce((earliest, current) => {
+        const currentDate = new Date(current.shiftStart);
+        const earliestDate = new Date(earliest.shiftStart);
+        return currentDate < earliestDate ? current : earliest;
+      });
+
+      // initialDate değişkenini set et
+      setInitialDate(new Date(earliestAssignment.shiftStart));
+    }
+
+    for (let i = 0; i < staffAssignments?.length; i++) {
+      const assignment = staffAssignments[i];
+
       const className = schedule?.shifts?.findIndex(
-        (shift) => shift.id === schedule?.assignments?.[i]?.shiftId
+        (shift) => shift.id === assignment?.shiftId
       );
 
       const assignmentDate = dayjs
-        .utc(schedule?.assignments?.[i]?.shiftStart)
+        .utc(assignment?.shiftStart)
         .format("YYYY-MM-DD");
       const isValidDate = validDates().includes(assignmentDate);
 
       const work = {
-        id: schedule?.assignments?.[i]?.id,
-        title: getShiftById(schedule?.assignments?.[i]?.shiftId)?.name,
+        id: assignment?.id,
+        title: getShiftById(assignment?.shiftId)?.name,
         duration: "01:00",
         date: assignmentDate,
-        staffId: schedule?.assignments?.[i]?.staffId,
-        shiftId: schedule?.assignments?.[i]?.shiftId,
-        className: `event ${classes[className]} ${getAssigmentById(schedule?.assignments?.[i]?.id)?.isUpdated
-            ? "highlight"
-            : ""
+        staffId: assignment?.staffId,
+        shiftId: assignment?.shiftId,
+        className: `event ${classes[className]} ${getAssigmentById(assignment?.id)?.isUpdated ? "highlight" : ""
           } ${!isValidDate ? "invalid-date" : ""}`,
       };
+
       works.push(work);
     }
 
     const offDays = schedule?.staffs?.find(
       (staff) => staff.id === selectedStaffId
     )?.offDays;
+
     const dates = getDatesBetween(
       dayjs(schedule.scheduleStartDate).format("DD.MM.YYYY"),
       dayjs(schedule.scheduleEndDate).format("DD.MM.YYYY")
     );
+
     let highlightedDates: string[] = [];
 
     dates.forEach((date) => {
@@ -180,8 +199,10 @@ const CalendarContainer = ({ schedule, auth }: CalendarContainerProps) => {
   };
 
   useEffect(() => {
+  }, [initialDate]);
+
+  useEffect(() => {
     setSelectedStaffId(schedule?.staffs?.[0]?.id);
-    console.log(schedule.staffs)
     generateStaffBasedCalendar();
   }, [schedule]);
 
@@ -212,23 +233,31 @@ const CalendarContainer = ({ schedule, auth }: CalendarContainerProps) => {
             <div
               key={staff.id}
               onClick={() => setSelectedStaffId(staff.id)}
-              className={`staff ${staff.id === selectedStaffId ? "active" : ""
-                }`}
+              className={`staff ${staff.id === selectedStaffId ? "active" : ""}`}
+              style={{
+                color: staff.id === selectedStaffId ? "#fff" : staff.color,
+                borderColor: staff.color,
+                backgroundColor: staff.id === selectedStaffId ? staff.color : "transparent",
+              }}
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 height="20px"
                 viewBox="0 -960 960 960"
                 width="20px"
+                fill="currentColor"
               >
                 <path d="M480-480q-66 0-113-47t-47-113q0-66 47-113t113-47q66 0 113 47t47 113q0 66-47 113t-113 47ZM160-160v-112q0-34 17-62.5t47-43.5q60-30 124.5-46T480-440q67 0 131.5 16T736-378q30 15 47 43.5t17 62.5v112H160Zm320-400q33 0 56.5-23.5T560-640q0-33-23.5-56.5T480-720q-33 0-56.5 23.5T400-640q0 33 23.5 56.5T480-560Zm160 228v92h80v-32q0-11-5-20t-15-14q-14-8-29.5-14.5T640-332Zm-240-21v53h160v-53q-20-4-40-5.5t-40-1.5q-20 0-40 1.5t-40 5.5ZM240-240h80v-92q-15 5-30.5 11.5T260-306q-10 5-15 14t-5 20v32Zm400 0H320h320ZM480-640Z" />
               </svg>
               <span>{staff.name}</span>
             </div>
+
           ))}
         </div>
+
         <FullCalendar
           ref={calendarRef}
+          key={initialDate.toISOString()}
           locale={auth.language}
           plugins={getPlugins()}
           contentHeight={400}
@@ -297,6 +326,7 @@ const CalendarContainer = ({ schedule, auth }: CalendarContainerProps) => {
             );
           }}
         />
+        
       </div>
     </div>
   );
