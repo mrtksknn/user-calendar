@@ -77,6 +77,8 @@ const CalendarContainer = ({ schedule, auth }: CalendarContainerProps) => {
   const [events, setEvents] = useState<EventInput[]>([]);
   const [highlightedDates, setHighlightedDates] = useState<string[]>([]);
   const [selectedStaffId, setSelectedStaffId] = useState<string | null>(null);
+  const [selectedEvent, setSelectedEvent] = useState<any>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const filteredEvents = selectedStaffId
     ? events.filter((event) => event.staffId === selectedStaffId)
@@ -217,10 +219,71 @@ const CalendarContainer = ({ schedule, auth }: CalendarContainerProps) => {
     generateStaffBasedCalendar();
   }, [selectedStaffId]);
 
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setSelectedEvent(null);
+  };
+
   const RenderEventContent = ({ eventInfo }: any) => {
+
+    const handleClick = () => {
+      const event = eventInfo.event;
+      const extendedProps = event.extendedProps;
+
+      const staff = schedule.staffs.find(s => s.id === extendedProps.staffId);
+      if (staff) {
+        event.staffName = staff.name;
+      }
+
+      const shift = schedule.shifts.find(s => s.id === extendedProps.shiftId);
+      if (shift) {
+        event.shift = shift;
+      }
+
+      setSelectedEvent(event);
+      console.log(eventInfo);
+      setIsModalOpen(true);
+    };
+
     return (
-      <div className="event-content">
-        <p>{eventInfo.event.title}</p>
+      <>
+        <div className="event-content clickable" onClick={handleClick}>
+          <p>{eventInfo.event.title}</p>
+        </div>
+      </>
+    );
+  };
+
+  const EventModal = ({ event, onClose }: { event: any; onClose: () => void }) => {
+    if (!event) return null;
+
+    return (
+      <div className="modal-overlay">
+        <div className="modal">
+          <div className="modal-title">
+            <h2>{event.title} Event Detail</h2>
+            <i>
+              {event.start &&
+                new Date(event.start).toLocaleDateString("en-En", {
+                  day: "2-digit",
+                  month: "long",
+                  year: "numeric"
+                })}
+            </i>
+          </div>
+
+          <br />
+          <div>
+            <p><strong>Staff Name:</strong> {event.staffName} </p>
+            <p><strong>Date:</strong> </p>
+            <p><strong>Start Time:</strong> {event.shift.shiftStart} </p>
+            <p><strong>End Time:</strong> {event.shift.shiftEnd} </p>
+          </div>
+
+          <div className="modal-footer">
+            <button onClick={onClose}>Close</button>
+          </div>
+        </div>
       </div>
     );
   };
@@ -326,9 +389,13 @@ const CalendarContainer = ({ schedule, auth }: CalendarContainerProps) => {
             );
           }}
         />
-        
+
+        {isModalOpen && (
+          <EventModal event={selectedEvent} onClose={closeModal} />
+        )}
+
       </div>
-    </div>
+    </div >
   );
 };
 

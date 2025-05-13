@@ -32,6 +32,11 @@
   min-height: 400px;
 }
 
+p {
+  margin: 0;
+  padding: .8rem;
+}
+
 .staff-calendar-container {
   width: 100%;
   margin: 0 auto;
@@ -431,4 +436,70 @@
 .highlightedPair {
   content: "";
   border-bottom: 5px solid rgba(194, 6, 138, 0.5) !important;
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal {
+  background-color: #fff;
+  border-radius: 10px;
+  width: 100%;
+  max-width: 600px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.1);
+  animation: fadeInScale 0.3s ease;
+
+  .modal-title {
+    display: flex;
+    align-items: center;
+    padding: .5rem 1.5rem;
+    justify-content: space-between;
+    border-bottom: 1px solid;
+  }
+
+  h2 {
+    margin: 0;
+  }
+
+  div {
+    p {
+      padding: 0 0 0 1.5rem;
+    }
+  }
+}
+
+@keyframes fadeInScale {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: end;
+  padding: 1rem 1.5rem;
+
+  button {
+    margin-top: 16px;
+    background-color: #ff5757;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+  }
 }
