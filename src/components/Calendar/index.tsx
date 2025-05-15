@@ -75,8 +75,8 @@ const CalendarContainer = ({ schedule, auth }: CalendarContainerProps) => {
   const calendarRef = useRef<FullCalendar>(null);
 
   const [events, setEvents] = useState<EventInput[]>([]);
-  const [highlightedDates, setHighlightedDates] = useState<string[]>([]);
-  const [selectedStaffId, setSelectedStaffId] = useState<string | null>(null);
+  const [highlightedDates, setHighlightedDates] = useState<any[]>([]);
+  const [selectedStaffId, setSelectedStaffId] = useState<any>();
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -120,29 +120,35 @@ const CalendarContainer = ({ schedule, auth }: CalendarContainerProps) => {
     return dates;
   };
 
-  const getDatesBetween = (startDate: string, endDate: string) => {
-    const dates = [];
-    const start = dayjs(startDate, "DD.MM.YYYY").toDate();
-    const end = dayjs(endDate, "DD.MM.YYYY").toDate();
-    const current = new Date(start);
+  function parseDate(dateStr: string): Date {
+    const [day, month, year] = dateStr.split('.').map(Number);
+    return new Date(year, month - 1, day);
+  }
 
-    while (current <= end) {
-      dates.push(dayjs(current).format("DD-MM-YYYY"));
-      current.setDate(current.getDate() + 1);
+  function getDatesBetween(startDate: string, endDate: string): string[] {
+    const dates: string[] = [];
+    let currentDate = parseDate(startDate);
+    const lastDate = parseDate(endDate);
+
+    while (currentDate <= lastDate) {
+      const day = currentDate.getDate().toString().padStart(2, '0');
+      const month = (currentDate.getMonth() + 1).toString().padStart(2, '0');
+      const year = currentDate.getFullYear();
+
+      dates.push(`${day}.${month}.${year}`);
+      currentDate.setDate(currentDate.getDate() + 1);
     }
 
     return dates;
-  };
+  }
 
   const generateStaffBasedCalendar = () => {
     const works: EventInput[] = [];
 
-    // selectedStaffId eşleşen assignment'lar
     const staffAssignments = schedule?.assignments?.filter(
       (assignment) => assignment?.staffId === selectedStaffId
     );
 
-    // En erken shiftStart değerine sahip assignment
     if (staffAssignments && staffAssignments.length > 0) {
       const earliestAssignment = staffAssignments.reduce((earliest, current) => {
         const currentDate = new Date(current.shiftStart);
@@ -150,7 +156,6 @@ const CalendarContainer = ({ schedule, auth }: CalendarContainerProps) => {
         return currentDate < earliestDate ? current : earliest;
       });
 
-      // initialDate değişkenini set et
       setInitialDate(new Date(earliestAssignment.shiftStart));
     }
 
@@ -198,15 +203,36 @@ const CalendarContainer = ({ schedule, auth }: CalendarContainerProps) => {
 
     setHighlightedDates(highlightedDates);
     setEvents(works);
+
+    const selectedStaff = getStaffById(selectedStaffId);
+
+    const pairs = selectedStaff?.pairList || [];
+
+    let tempHighlightedDates: { date: string; color: string }[] = [];
+
+    pairs.forEach(pair => {
+      const staff = getStaffById(pair.staffId);
+      const color = (staff as any)?.color || '#000000'; // default renk siyah
+
+      const dates = getDatesBetween(pair.startDate, pair.endDate);
+
+      dates.forEach(date => {
+        tempHighlightedDates.push({ date, color });
+      });
+    });
+
+    const uniqueDatesMap = new Map<string, { date: string; color: string }>();
+
+    tempHighlightedDates.forEach(item => {
+      if (!uniqueDatesMap.has(item.date)) {
+        uniqueDatesMap.set(item.date, item);
+      }
+    });
+
+    const uniqueHighlightedDates = Array.from(uniqueDatesMap.values());
+
+    setHighlightedDates(uniqueHighlightedDates);
   };
-
-  useEffect(() => {
-  }, [initialDate]);
-
-  useEffect(() => {
-    setSelectedStaffId(schedule?.staffs?.[0]?.id);
-    generateStaffBasedCalendar();
-  }, [schedule]);
 
   useEffect(() => {
     if (calendarRef.current) {
@@ -214,6 +240,15 @@ const CalendarContainer = ({ schedule, auth }: CalendarContainerProps) => {
       calendarApi.refetchEvents();
     }
   }, [filteredEvents]);
+
+  useEffect(() => {
+    if (schedule?.staffs?.length) {
+      const firstStaff = getStaffById(schedule.staffs[0].id);
+      if (firstStaff) {
+        setSelectedStaffId(firstStaff.id);
+      }
+    }
+  }, [schedule]);
 
   useEffect(() => {
     generateStaffBasedCalendar();
@@ -241,7 +276,6 @@ const CalendarContainer = ({ schedule, auth }: CalendarContainerProps) => {
       }
 
       setSelectedEvent(event);
-      console.log(eventInfo);
       setIsModalOpen(true);
     };
 
@@ -275,7 +309,7 @@ const CalendarContainer = ({ schedule, auth }: CalendarContainerProps) => {
           <br />
           <div>
             <p><strong>Staff Name:</strong> {event.staffName} </p>
-            <p><strong>Date:</strong> </p>
+            <p><strong>Date:</strong>{dayjs(event.start).format("DD.MM.YYYY")} </p>
             <p><strong>Start Time:</strong> {event.shift.shiftStart} </p>
             <p><strong>End Time:</strong> {event.shift.shiftEnd} </p>
           </div>
@@ -365,24 +399,29 @@ const CalendarContainer = ({ schedule, auth }: CalendarContainerProps) => {
               info.end,
               "days"
             );
-            if (startDiff < 0 && startDiff > -35) prevButton.disabled = true;
-            else prevButton.disabled = false;
+            if (startDiff < 0 && startDiff > -35)
+              prevButton.disabled = false;
 
-            if (endDiff < 0 && endDiff > -32) nextButton.disabled = true;
-            else nextButton.disabled = false;
+            if (endDiff < 0 && endDiff > -32)
+              nextButton.disabled = false;
           }}
           dayCellContent={({ date }) => {
-            const found = validDates().includes(
-              dayjs(date).format("YYYY-MM-DD")
-            );
-            const isHighlighted = highlightedDates.includes(
-              dayjs(date).format("DD-MM-YYYY")
-            );
+            const currentDay = dayjs(date).format("DD");
+            const currentMonth = dayjs(date).format("MM");
+            const currentYear = dayjs(date).format("YYYY");
+
+            const matchedDateObj = highlightedDates.find(d => {
+              const [day, month, year] = d.date.split('.');
+              return day === currentDay && month === currentMonth && year === currentYear;
+            });
+
+            const borderColor = matchedDateObj ? matchedDateObj.color : 'transparent';
 
             return (
               <div
-                className={`${found ? "" : "date-range-disabled"} ${isHighlighted ? "highlighted-date-orange" : ""
-                  } highlightedPair`}
+                style={{
+                  borderBottom: matchedDateObj ? `5px solid ${borderColor}` : 'none',
+                }}
               >
                 {dayjs(date).date()}
               </div>
