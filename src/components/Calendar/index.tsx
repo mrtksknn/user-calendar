@@ -19,6 +19,7 @@ import "../profileCalendar.scss";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import isSameOrBefore from "dayjs/plugin/isSameOrBefore";
+import ProfileCard from "../Profile";
 
 dayjs.extend(utc);
 dayjs.extend(isSameOrBefore);
@@ -75,6 +76,7 @@ const CalendarContainer = ({ schedule, auth }: CalendarContainerProps) => {
   const calendarRef = useRef<FullCalendar>(null);
 
   const [events, setEvents] = useState<EventInput[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
   const [highlightedDates, setHighlightedDates] = useState<any[]>([]);
   const [selectedStaffId, setSelectedStaffId] = useState<any>();
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
@@ -234,6 +236,28 @@ const CalendarContainer = ({ schedule, auth }: CalendarContainerProps) => {
     setHighlightedDates(uniqueHighlightedDates);
   };
 
+  const sortedStaffs = [...(schedule?.staffs || [])].sort((a, b) => {
+    const aMatch = a.name.toLowerCase().includes(searchTerm.toLowerCase());
+    const bMatch = b.name.toLowerCase().includes(searchTerm.toLowerCase());
+
+    if (aMatch && !bMatch) return -1;
+    if (!aMatch && bMatch) return 1;
+    return 0;
+  });
+
+  function lightenColor(hex: string, percent: number): string {
+    const num = parseInt(hex.replace("#", ""), 16);
+    let r = (num >> 16) + Math.round(255 * percent);
+    let g = ((num >> 8) & 0x00FF) + Math.round(255 * percent);
+    let b = (num & 0x0000FF) + Math.round(255 * percent);
+
+    r = r > 255 ? 255 : r;
+    g = g > 255 ? 255 : g;
+    b = b > 255 ? 255 : b;
+
+    return `rgb(${r}, ${g}, ${b})`;
+  }
+
   useEffect(() => {
     if (calendarRef.current) {
       const calendarApi = calendarRef.current.getApi();
@@ -325,109 +349,139 @@ const CalendarContainer = ({ schedule, auth }: CalendarContainerProps) => {
   return (
     <div className="calendar-section">
       <div className="calendar-wrapper">
-        <div className="staff-list">
-          {schedule?.staffs?.map((staff: any) => (
-            <div
-              key={staff.id}
-              onClick={() => setSelectedStaffId(staff.id)}
-              className={`staff ${staff.id === selectedStaffId ? "active" : ""}`}
-              style={{
-                color: staff.id === selectedStaffId ? "#fff" : staff.color,
-                borderColor: staff.color,
-                backgroundColor: staff.id === selectedStaffId ? staff.color : "transparent",
-              }}
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                height="20px"
-                viewBox="0 -960 960 960"
-                width="20px"
-                fill="currentColor"
-              >
-                <path d="M480-480q-66 0-113-47t-47-113q0-66 47-113t113-47q66 0 113 47t47 113q0 66-47 113t-113 47ZM160-160v-112q0-34 17-62.5t47-43.5q60-30 124.5-46T480-440q67 0 131.5 16T736-378q30 15 47 43.5t17 62.5v112H160Zm320-400q33 0 56.5-23.5T560-640q0-33-23.5-56.5T480-720q-33 0-56.5 23.5T400-640q0 33 23.5 56.5T480-560Zm160 228v92h80v-32q0-11-5-20t-15-14q-14-8-29.5-14.5T640-332Zm-240-21v53h160v-53q-20-4-40-5.5t-40-1.5q-20 0-40 1.5t-40 5.5ZM240-240h80v-92q-15 5-30.5 11.5T260-306q-10 5-15 14t-5 20v32Zm400 0H320h320ZM480-640Z" />
-              </svg>
-              <span>{staff.name}</span>
+        <div className="content-container">
+          <ProfileCard profile={auth} />
+
+          <hr />
+
+          <div className="staff-list">
+            <div className="search-wrapper">
+              <svg className="search-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" strokeWidth="0"></g><g id="SVGRepo_tracerCarrier" strokeLinecap="round" strokeLinejoin="round"></g><g id="SVGRepo_iconCarrier"> <path fillRule="evenodd" clipRule="evenodd" d="M15 10.5C15 12.9853 12.9853 15 10.5 15C8.01472 15 6 12.9853 6 10.5C6 8.01472 8.01472 6 10.5 6C12.9853 6 15 8.01472 15 10.5ZM14.1793 15.2399C13.1632 16.0297 11.8865 16.5 10.5 16.5C7.18629 16.5 4.5 13.8137 4.5 10.5C4.5 7.18629 7.18629 4.5 10.5 4.5C13.8137 4.5 16.5 7.18629 16.5 10.5C16.5 11.8865 16.0297 13.1632 15.2399 14.1792L20.0304 18.9697L18.9697 20.0303L14.1793 15.2399Z" fill="#888888"></path> </g></svg>
+              <input
+                type="text"
+                placeholder="Search Staff"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="staff-search-input"
+              />
             </div>
 
-          ))}
+            <div className="staff-container">
+              {sortedStaffs.map((staff: any) => (
+                <div
+                  key={staff.id}
+                  onClick={() => setSelectedStaffId(staff.id)}
+                  className={`staff ${staff.id === selectedStaffId ? "active" : ""}`}
+                  style={{
+                    borderColor: staff.id === selectedStaffId ? staff.color : '#fff',
+                    background: staff.id === selectedStaffId ? lightenColor(staff.color, 0.6) : 'transparent',
+                  }}
+                >
+                  <div className="circle" style={{
+                    height: '32px',
+                    width: '32px',
+                    color: staff.id === selectedStaffId ? "#fff" : staff.color,
+                    borderColor: staff.color,
+                    borderRadius: '50%',
+                    border: '1px solid',
+                    display: 'flex',
+                    placeContent: 'center',
+                    alignItems: 'center',
+                    fontWeight: 'bold',
+                    backgroundColor: staff.id === selectedStaffId ? staff.color : lightenColor(staff.color, 0.7),
+                  }}>
+                    {staff.name.charAt(0).toUpperCase()}
+                  </div>
+
+                  <span>{staff.name}</span>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
 
-        <FullCalendar
-          ref={calendarRef}
-          key={initialDate.toISOString()}
-          locale={auth.language}
-          plugins={getPlugins()}
-          contentHeight={400}
-          handleWindowResize={true}
-          selectable={true}
-          editable={true}
-          eventOverlap={true}
-          eventDurationEditable={false}
-          initialView="dayGridMonth"
-          initialDate={initialDate}
-          events={filteredEvents}
-          firstDay={1}
-          dayMaxEventRows={4}
-          fixedWeekCount={true}
-          showNonCurrentDates={true}
-          eventContent={(eventInfo: any) => (
-            <RenderEventContent eventInfo={eventInfo} />
-          )}
-          datesSet={(info: any) => {
-            const prevButton = document.querySelector(
-              ".fc-prev-button"
-            ) as HTMLButtonElement;
-            const nextButton = document.querySelector(
-              ".fc-next-button"
-            ) as HTMLButtonElement;
+        <div className="divider"></div>
 
-            if (
-              calendarRef?.current?.getApi().getDate() &&
-              !dayjs(schedule?.scheduleStartDate).isSame(
-                calendarRef?.current?.getApi().getDate()
+        <div className="calendar-container">
+          <FullCalendar
+            ref={calendarRef}
+            key={initialDate.toISOString()}
+            locale={auth.language}
+            plugins={getPlugins()}
+            height="100%"
+            handleWindowResize={true}
+            selectable={true}
+            editable={true}
+            eventOverlap={true}
+            eventDurationEditable={false}
+            initialView="dayGridMonth"
+            initialDate={initialDate}
+            events={filteredEvents}
+            firstDay={1}
+            dayMaxEventRows={4}
+            fixedWeekCount={true}
+            showNonCurrentDates={true}
+            eventContent={(eventInfo: any) => (
+              <RenderEventContent eventInfo={eventInfo} />
+            )}
+            datesSet={(info: any) => {
+              const prevButton = document.querySelector(
+                ".fc-prev-button"
+              ) as HTMLButtonElement;
+              const nextButton = document.querySelector(
+                ".fc-next-button"
+              ) as HTMLButtonElement;
+
+              if (
+                calendarRef?.current?.getApi().getDate() &&
+                !dayjs(schedule?.scheduleStartDate).isSame(
+                  calendarRef?.current?.getApi().getDate()
+                )
               )
-            )
-              setInitialDate(calendarRef?.current?.getApi().getDate());
+                setInitialDate(calendarRef?.current?.getApi().getDate());
 
-            const startDiff = dayjs(info.start)
-              .utc()
-              .diff(
-                dayjs(schedule.scheduleStartDate).subtract(1, "day").utc(),
+              const startDiff = dayjs(info.start)
+                .utc()
+                .diff(
+                  dayjs(schedule.scheduleStartDate).subtract(1, "day").utc(),
+                  "days"
+                );
+              const endDiff = dayjs(dayjs(schedule.scheduleEndDate)).diff(
+                info.end,
                 "days"
               );
-            const endDiff = dayjs(dayjs(schedule.scheduleEndDate)).diff(
-              info.end,
-              "days"
-            );
-            if (startDiff < 0 && startDiff > -35)
-              prevButton.disabled = false;
+              if (startDiff < 0 && startDiff > -35)
+                prevButton.disabled = false;
 
-            if (endDiff < 0 && endDiff > -32)
-              nextButton.disabled = false;
-          }}
-          dayCellContent={({ date }) => {
-            const currentDay = dayjs(date).format("DD");
-            const currentMonth = dayjs(date).format("MM");
-            const currentYear = dayjs(date).format("YYYY");
+              if (endDiff < 0 && endDiff > -32)
+                nextButton.disabled = false;
+            }}
+            dayCellContent={({ date }) => {
+              const currentDay = dayjs(date).format("DD");
+              const currentMonth = dayjs(date).format("MM");
+              const currentYear = dayjs(date).format("YYYY");
 
-            const matchedDateObj = highlightedDates.find(d => {
-              const [day, month, year] = d.date.split('.');
-              return day === currentDay && month === currentMonth && year === currentYear;
-            });
+              const matchedDateObj = highlightedDates.find(d => {
+                const [day, month, year] = d.date.split('.');
+                return day === currentDay && month === currentMonth && year === currentYear;
+              });
 
-            const borderColor = matchedDateObj ? matchedDateObj.color : 'transparent';
+              const borderColor = matchedDateObj ? matchedDateObj.color : 'transparent';
 
-            return (
-              <div
-                style={{
-                  borderBottom: matchedDateObj ? `5px solid ${borderColor}` : 'none',
-                }}
-              >
-                {dayjs(date).date()}
-              </div>
-            );
-          }}
-        />
+              return (
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    borderBottom: matchedDateObj ? `5px solid ${borderColor}` : 'none',
+                  }}
+                >
+                  {dayjs(date).date()}
+                </div>
+              );
+            }}
+          />
+        </div>
 
         {isModalOpen && (
           <EventModal event={selectedEvent} onClose={closeModal} />

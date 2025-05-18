@@ -27,7 +27,6 @@ const ProfileCalendar = () => {
 
   return (
     <div className="profile-calendar-container">
-      <ProfileCard profile={auth} />
       <CalendarContainer schedule={schedule} auth={auth} />
     </div>
   );
