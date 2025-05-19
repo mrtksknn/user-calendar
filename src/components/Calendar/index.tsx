@@ -79,6 +79,7 @@ const CalendarContainer = ({ schedule, auth }: CalendarContainerProps) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [highlightedDates, setHighlightedDates] = useState<any[]>([]);
   const [selectedStaffId, setSelectedStaffId] = useState<any>();
+  const [selectedStaff, setSelectedStaff] = useState<any>();
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -106,6 +107,12 @@ const CalendarContainer = ({ schedule, auth }: CalendarContainerProps) => {
 
   const getStaffById = (id: string) => {
     return schedule?.staffs?.find((staff) => id === staff.id);
+  };
+
+  const getSelectedStaff = (id: string) => {
+    setSelectedStaffId(id);
+    setSelectedStaff(schedule?.staffs?.find((staff) => id === staff.id));
+    console.log(selectedStaff)
   };
 
   const validDates = () => {
@@ -270,6 +277,7 @@ const CalendarContainer = ({ schedule, auth }: CalendarContainerProps) => {
       const firstStaff = getStaffById(schedule.staffs[0].id);
       if (firstStaff) {
         setSelectedStaffId(firstStaff.id);
+        setSelectedStaff(schedule?.staffs?.find((staff) => firstStaff.id === staff.id));
       }
     }
   }, [schedule]);
@@ -300,6 +308,8 @@ const CalendarContainer = ({ schedule, auth }: CalendarContainerProps) => {
       }
 
       setSelectedEvent(event);
+
+      console.log(event)
       setIsModalOpen(true);
     };
 
@@ -318,24 +328,85 @@ const CalendarContainer = ({ schedule, auth }: CalendarContainerProps) => {
     return (
       <div className="modal-overlay">
         <div className="modal">
-          <div className="modal-title">
-            <h2>{event.title} Event Detail</h2>
-            <i>
-              {event.start &&
-                new Date(event.start).toLocaleDateString("en-En", {
-                  day: "2-digit",
-                  month: "long",
-                  year: "numeric"
-                })}
-            </i>
+          <div className="modal-title" style={{ background: lightenColor(selectedStaff.color, 0.3), color: '#fff' }}>
+            <h2>{event.title}</h2>
+
+            <div className="modal-calendar">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" strokeWidth="0"></g>
+                <g id="SVGRepo_tracerCarrier" strokeLinecap="round" strokeLinejoin="round"></g><g id="SVGRepo_iconCarrier">
+                  <path d="M3 10H21M7 3V5M17 3V5M6.2 21H17.8C18.9201 21 19.4802 21 19.908 20.782C20.2843 20.5903 20.5903 20.2843 20.782 19.908C21 19.4802 21 18.9201 21 17.8V8.2C21 7.07989 21 6.51984 20.782 6.09202C20.5903 5.71569 20.2843 5.40973 19.908 5.21799C19.4802 5 18.9201 5 17.8 5H6.2C5.0799 5 4.51984 5 4.09202 5.21799C3.71569 5.40973 3.40973 5.71569 3.21799 6.09202C3 6.51984 3 7.07989 3 8.2V17.8C3 18.9201 3 19.4802 3.21799 19.908C3.40973 20.2843 3.71569 20.5903 4.09202 20.782C4.51984 21 5.07989 21 6.2 21Z"
+                    stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  </path>
+                </g>
+              </svg>
+              <i>
+                {event.start &&
+                  new Date(event.start).toLocaleDateString("en-En", {
+                    day: "2-digit",
+                    month: "long",
+                    year: "numeric"
+                  })}
+              </i>
+            </div>
           </div>
 
           <br />
-          <div>
-            <p><strong>Staff Name:</strong> {event.staffName} </p>
-            <p><strong>Date:</strong>{dayjs(event.start).format("DD.MM.YYYY")} </p>
-            <p><strong>Start Time:</strong> {event.shift.shiftStart} </p>
-            <p><strong>End Time:</strong> {event.shift.shiftEnd} </p>
+
+          <div className="modal-content">
+            <div
+              key={selectedStaff.id}
+              onClick={() => getSelectedStaff(selectedStaff.id)}
+              className="staff"
+              style={{
+                display: 'flex', alignItems: 'center'
+              }}
+            >
+              <div className="circle" style={{
+                height: '56px',
+                width: '56px',
+                color: selectedStaff.color,
+                borderColor: selectedStaff.color,
+                borderRadius: '50%',
+                border: '2px solid',
+                display: 'flex',
+                placeContent: 'center',
+                alignItems: 'center',
+                fontWeight: 'bold',
+                backgroundColor: lightenColor(selectedStaff.color, 0.6),
+              }}>
+                {selectedStaff.name.charAt(0).toUpperCase()}
+              </div>
+
+              <span>{selectedStaff.name}</span>
+            </div>
+
+            <div className="shift-info">
+              <div style={{ padding: '8px', background: '#62748e3d', borderRadius: '50%', height: '40px' }}>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0"></g>
+                  <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier">
+                    <path d="M12 7V12H15M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z"
+                      stroke="#000000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    </path>
+                  </g>
+                </svg>
+              </div>
+
+              <div style={{display: 'flex'}}>
+                <strong>{event.shift.shiftStart} </strong>
+
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <g id="SVGRepo_bgCarrier" strokeWidth="0"></g><g id="SVGRepo_tracerCarrier" strokeLinecap="round" strokeLinejoin="round"></g>
+                  <g id="SVGRepo_iconCarrier"> <path d="M6 12H18M18 12L13 7M18 12L13 17"
+                    stroke="#62748e3d" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  </path>
+                  </g>
+                </svg>
+
+                <strong>{event.shift.shiftEnd} </strong>
+              </div>
+
+              <span style={{ color: '#62748e', fontWeight: 600 }}>({event.shift.shiftDurationHourly} hours) </span>
+            </div>
           </div>
 
           <div className="modal-footer">
@@ -370,7 +441,7 @@ const CalendarContainer = ({ schedule, auth }: CalendarContainerProps) => {
               {sortedStaffs.map((staff: any) => (
                 <div
                   key={staff.id}
-                  onClick={() => setSelectedStaffId(staff.id)}
+                  onClick={() => getSelectedStaff(staff.id)}
                   className={`staff ${staff.id === selectedStaffId ? "active" : ""}`}
                   style={{
                     borderColor: staff.id === selectedStaffId ? staff.color : '#fff',

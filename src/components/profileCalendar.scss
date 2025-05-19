@@ -343,14 +343,15 @@ p {
   background-color: #fff;
   border-radius: 8px;
   width: 100%;
-  max-width: 600px;
+  max-width: 500px;
   box-shadow: 0 6px 24px rgba(0, 0, 0, 0.1);
   animation: fadeInScale 0.3s ease;
 
   .modal-title {
     display: flex;
     align-items: center;
-    padding: .5rem 1.5rem;
+    padding: 1.5rem;
+    border-radius: 8px 8px 0 0;
     justify-content: space-between;
     border-bottom: 1px solid;
   }
@@ -359,9 +360,32 @@ p {
     margin: 0;
   }
 
-  div {
-    p {
-      padding: 0 0 0 1.5rem;
+  .modal-calendar {
+    gap: 8px;
+    display: flex;
+    align-items: center;
+  }
+
+  .modal-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    padding: 0 1.5rem;
+
+    .staff {
+      gap: 8px;
+
+      span {
+        font-size: 20px;
+        font-weight: 600;
+      }
+    }
+
+    .shift-info {
+      gap: 1rem;
+      display: flex;
+      color: #000000ad;
+      align-items: center;
     }
   }
 }
@@ -386,11 +410,17 @@ p {
 
   button {
     margin-top: 16px;
-    background-color: #ff5757;
-    color: white;
     border: none;
+    height: 40px;
+    background: transparent;
+    border: 1px solid #e2e8f0;
+    font-size: 14px;
     padding: 8px 16px;
     border-radius: 8px;
     cursor: pointer;
+
+    &:hover {
+      background: #f9f3f4;
+    }
   }
 }
